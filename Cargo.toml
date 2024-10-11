@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.89"
 memmap2 = "0.9.5"
+nohash = "0.2.0"
 rayon = "1.10.0"

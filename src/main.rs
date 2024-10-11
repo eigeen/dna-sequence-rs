@@ -1,22 +1,43 @@
 use std::{
+    collections::HashMap,
     fs::{File, OpenOptions},
     io::{BufRead, Read, Write},
+    sync::LazyLock,
     thread,
 };
 
-use memmap2::Mmap;
+use nohash::BuildNoHashHasher;
 use rayon::iter::{ParallelBridge, ParallelIterator};
+
+type ReverseMap = HashMap<u8, u8, BuildNoHashHasher<u8>>;
+
+static BASE_REVERSE: LazyLock<ReverseMap> = LazyLock::new(|| {
+    let mut m: ReverseMap = HashMap::with_hasher(BuildNoHashHasher::default());
+    m.insert(b'A', b'T');
+    m.insert(b'a', b'T');
+    m.insert(b'T', b'A');
+    m.insert(b't', b'A');
+    m.insert(b'C', b'G');
+    m.insert(b'c', b'G');
+    m.insert(b'G', b'C');
+    m.insert(b'g', b'C');
+    m
+});
 
 fn reverse_component(dna: &mut [u8]) {
     dna.reverse();
 
     for base in dna {
-        match *base {
-            b'A' | b'a' => *base = b'T',
-            b'T' | b't' => *base = b'A',
-            b'C' | b'c' => *base = b'G',
-            b'G' | b'g' => *base = b'C',
-            _ => {}
+        // match *base {
+        //     b'A' | b'a' => *base = b'T',
+        //     b'T' | b't' => *base = b'A',
+        //     b'C' | b'c' => *base = b'G',
+        //     b'G' | b'g' => *base = b'C',
+        //     _ => {}
+        // }
+        // 使用哈希表降低100ms
+        if let Some(reversed_base) = BASE_REVERSE.get(base) {
+            *base = *reversed_base;
         }
     }
 }
