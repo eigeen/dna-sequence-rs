@@ -44,11 +44,14 @@ fn reverse_component(dna: &mut [u8]) {
 
 fn main() -> anyhow::Result<()> {
     // 全量读取测试
-    let start = std::time::Instant::now();
+    let all_start = std::time::Instant::now();
     let mut input = File::open("filteredReads.txt")?;
     let mut mmap = vec![];
     input.read_to_end(&mut mmap)?;
-    println!("Time to read file all: {}ms", start.elapsed().as_millis());
+    println!(
+        "Time to read file all: {}ms",
+        all_start.elapsed().as_millis()
+    );
 
     // mmap读取测试 速度损耗比全量读取慢了至少300ms，暂时放弃
     // let input = File::open("filteredReads.txt")?;
@@ -78,8 +81,7 @@ fn main() -> anyhow::Result<()> {
     // }
     // println!("Time to process: {}ms", start.elapsed().as_millis());
 
-    // 计算 IO 分离方案
-    let start = std::time::Instant::now();
+    // 并行计算 IO 分离方案
     let (tx, rx) = std::sync::mpsc::channel::<Vec<u8>>();
     let writer_handle = thread::spawn(move || {
         while let Ok(data) = rx.recv() {
@@ -114,7 +116,7 @@ fn main() -> anyhow::Result<()> {
     tx.send(vec![]).unwrap();
     writer_handle.join().unwrap();
     println!("Time to calculate: {:.3}ms", calc_timer as f64 / 1000.0);
-    println!("Time to process: {}ms", start.elapsed().as_millis());
+    println!("All time spent: {}ms", all_start.elapsed().as_millis());
 
     Ok(())
 }
