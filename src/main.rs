@@ -60,8 +60,11 @@ fn main() -> anyhow::Result<()> {
     // 计算 IO 分离方案
     let start = std::time::Instant::now();
     let (tx, rx) = std::sync::mpsc::channel::<Vec<u8>>();
-    thread::spawn(move || {
+    let writer_handle = thread::spawn(move || {
         while let Ok(data) = rx.recv() {
+            if data.is_empty() {
+                break;
+            }
             if let Err(e) = output_file.write_all(&data) {
                 println!("Write error: {}", e);
             };
@@ -86,6 +89,9 @@ fn main() -> anyhow::Result<()> {
         tx.send(dna)?;
         tx.send(b"\n".to_vec())?;
     }
+
+    tx.send(vec![]).unwrap();
+    writer_handle.join().unwrap();
     println!("Time to calculate: {:.3}ms", calc_timer as f64 / 1000.0);
     println!("Time to process: {}ms", start.elapsed().as_millis());
 
